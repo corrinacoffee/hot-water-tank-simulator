@@ -13,33 +13,25 @@ int sensor3WaterLevel = 30;
 int sensor4WaterLevel = 40;
 int MAX_WATER_LEVEL = 50; // req 23
 
-// example code, would need wrapped in functions and timed/repeated
-
-// req 11: "Water shall enter the tank faster when both inlets are open than when one is open."
-// approach 1
-if (inValve1 && inValve2) {
-  waterLevel = waterLevel+2;
-}
-else if (inValve1 || inValve2) {
-  waterLevel++;
-} else {
-  // no water flow
-}
-// approach 2
-if (inValve1) {
-  waterLevel++;
-}
-if (inValve2) {
-  waterLevel++;
-}
-
-if (outValve) {
-  waterLevel--;
-}
-
-// req 14: "The system shall open the outlet valve when the water level reaches the highest sensor."
-if (waterLevel >= sensor4WaterLevel) {
-  outValve = true;
+void updateWaterLevel() {
+  // req 11: "Water shall enter the tank faster when both inlets are open than when one is open."
+  if (inValve1 && inValve2) {
+    waterLevel = waterLevel+2;
+  }
+  else if (inValve1 || inValve2) {
+    waterLevel++;
+  } else {
+    // no water flow
+  }
+  
+  if (outValve) {
+    waterLevel--;
+  }
+  
+  // req 14: "The system shall open the outlet valve when the water level reaches the highest sensor."
+  if (waterLevel >= sensor4WaterLevel) {
+    outValve = true;
+  }
 }
 
 // req 29: "The system shall allow moving a water level sensor."
