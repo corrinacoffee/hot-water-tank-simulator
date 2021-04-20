@@ -42,7 +42,7 @@ if (waterLevel >= sensor4WaterLevel) {
   outValve = true;
 }
 
-// req 29: The system shall allow moving a water level sensor.
+// req 29: "The system shall allow moving a water level sensor."
 void setWaterLevelSensor(int sensorNumber, int newWaterLevel) {
   switch(sensorNumber) {
     case 1:
