@@ -1,3 +1,5 @@
+// FIXME fix Corrina's bad syntax, make it more C less Java
+
 #include <stdio.h>
 #include <stdbool.h>
 
