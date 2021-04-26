@@ -55,31 +55,25 @@ int reachedWaterLevelSensor() {
 }
 
 // req 29: "The system shall allow moving a water level sensor."
-int setWaterLevelSensor(int sensorNumber, int newWaterLevel) {
-  retVal = 0;
+void setWaterLevelSensor(int sensorNumber, int newWaterLevel) {
   switch(sensorNumber) {
     case 1:
       if (newWaterLevel > 0 && newWaterLevel < sensor2WaterLevel) {
         sensor1WaterLevel = newWaterLevel;
-        retVal = 1;
       }
     case 2:
       if (newWaterLevel > sensor1WaterLevel && newWaterLevel < sensor3WaterLevel) {
         sensor2WaterLevel = newWaterLevel;
-        retVal = 1;
       }
     case 3:
       if (newWaterLevel > sensor2WaterLevel && newWaterLevel < sensor4WaterLevel) {
         sensor3WaterLevel = newWaterLevel;
-        retVal = 1;
       }
     case 4:
       if (newWaterLevel > sensor3WaterLevel && newWaterLevel < MAX_WATER_LEVEL) {
         sensor4WaterLevel = newWaterLevel;
-        retVal = 1;
       }
   }
-  return retVal;
 }
 
 // param open true if open, false if close
