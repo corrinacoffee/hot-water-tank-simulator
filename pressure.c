@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+// in psi
 int MIN_NOM_OP_PRESSURE = 20; // req 24: "The minimum nominal operating pressure shall be 20 psi (130 kPa)."
 int MIN_NOM_OP_PRESSURE = 30; // req 25: "The maximum nominal operating pressure shall be 30 psi (206 kPa)."
 int CRIT_PRESSURE = 50; // req 26: "The critical pressure shall be 50 psi (344 kPa)."
