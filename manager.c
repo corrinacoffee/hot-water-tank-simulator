@@ -3,12 +3,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-// req 5: "The system shall use time-stamping for identifying time of events (both ticks and sec/nsec)."
+// TODO use this everywhere
 // req 6: "The system shall capture/record/display the system events and actions."
-void log(string msg) {
+// req 5: "The system shall use time-stamping for identifying time of events (both ticks and sec/nsec)."
+void record(string msg) {
   int timeInTicks = tickGet();
   int timeInSec = sysClkRateGet()/timeInTicks;
-  printf("%d %d %s", timeInTicks, timeInSec, msg);
+  printf("%d %d %s", timeInTicks, timeInSec, msg); // TODO format nicely
 }
 
 // TODO have a way for the user to initiate being asked for input (call these functions)
