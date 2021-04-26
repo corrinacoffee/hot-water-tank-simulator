@@ -11,23 +11,23 @@ int DEFAULT_MIN_TEMP = 10; // req 28: "The default minimum temperature shall be 
 int DEFAULT_MAX_TEMP = 100; // req 27: "The default maximum temperature shall be 100°C."
 int minTemp = DEFAULT_MIN_TEMP;
 int maxTemp = DEFAULT_MAX_TEMP;
-int temp = 20; // user defined req 32: "The temperature of water entering the tank shall be room temperature, or 20°C."
+int tempSensor = 20; // user defined req 32: "The temperature of water entering the tank shall be room temperature, or 20°C."
 
 // TODO use real time construct to perform periodically
 void updateTemp() {
   if (heater) {
-    temp++;
+    tempSensor++;
   }
 }
 
 // TODO use real time construct to initiate action
 // req 17: "The system shall turn on the water heater when the temperature is below the minimum."
 // req 18: "The system shall turn off the water heater when the temperature is above the maximum."
-void setHeaterBySensor() {
-  if (temp < minTemp) {
+void tempSensorControlHeater() {
+  if (tempSensor < minTemp) {
     heater = true;
   }
-  if (temp > maxTemp) {
+  if (tempSensor > maxTemp) {
     heater = false;
   }
 }
