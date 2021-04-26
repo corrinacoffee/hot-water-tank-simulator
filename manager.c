@@ -6,12 +6,13 @@
 // req 5: "The system shall use time-stamping for identifying time of events (both ticks and sec/nsec)."
 // req 6: "The system shall capture/record/display the system events and actions."
 void log(string msg) {
-  int timeInTics = tickGet();
-  int timeInSec = sysClkRateGet()/timeInTics;
-  printf("%d %d %s", timeInTics, timeInSec, msg);
+  int timeInTicks = tickGet();
+  int timeInSec = sysClkRateGet()/timeInTicks;
+  printf("%d %d %s", timeInTicks, timeInSec, msg);
 }
 
-// TODO have a way to initiate these functions that ask the user for input
+// TODO have a way for the user to initiate being asked for input (call these functions)
+// TODO although set functions currently do not accept bad input, they also do not alert user if action was successful or not
 
 // req 29: "The system shall allow moving a water level sensor."
 void userSetWaterLevelSensor() {
