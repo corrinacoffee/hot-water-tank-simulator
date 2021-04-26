@@ -17,6 +17,7 @@ int sensor3WaterLevel = 30;
 int sensor4WaterLevel = 40;
 int MAX_WATER_LEVEL = 50; // req 23: "The volume of the tank shall be 50 L."
 
+// TODO use real time construct to perform periodically
 // req 10: "Water shall enter the tank if either inlet valve is open."
 // req 11: "Water shall enter the tank faster when both inlets are open than when one is open."
 void updateWaterLevel() {
@@ -34,6 +35,7 @@ void updateWaterLevel() {
   }
 }
 
+// TODO use real time construct to initiate action
 // req 14: "The system shall open the outlet valve when the water level reaches the highest sensor."
 void updateOutValve() {
   if (waterLevel >= sensor4WaterLevel) {
@@ -41,6 +43,8 @@ void updateOutValve() {
   }
 }
 
+// TODO use real time construct to initiate action
+// TODO this function just tells you which level it's above
 // req 12: "The system shall indicate when the water level reaches a certain sensor."
 int reachedWaterLevelSensor() {
   if (waterLevel >= sensor4WaterLevel) {
