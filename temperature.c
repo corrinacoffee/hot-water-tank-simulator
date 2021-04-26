@@ -30,14 +30,14 @@ void setHeaterBySensor() {
 }
 
 // req 30: "The system shall allow changing the temperature sensor’s minimum value."
-void setMinTemperature(int newMinTemp) {
+void setMinTemp(int newMinTemp) {
   if (newMinTemp > 0 && newMinTemp < maxTemp) {
     minTemp = newMinTemp;
   }
 }
 
 // req 31: "The system shall allow changing the temperature sensor’s maximum value."
-void setMaxTemperature(int newMaxTemp) {
+void setMaxTemp(int newMaxTemp) {
   if (newMaxTemp > 0 && newMaxTemp > minTemp) {
     maxTemp = newMaxTemp;
   }
