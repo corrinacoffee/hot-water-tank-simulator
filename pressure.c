@@ -1,3 +1,5 @@
+// FIXME fix Corrina's bad syntax, make it more C less Java
+
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -6,7 +8,10 @@ int MIN_NOM_OP_PRESSURE = 20; // req 24: "The minimum nominal operating pressure
 int MIN_NOM_OP_PRESSURE = 30; // req 25: "The maximum nominal operating pressure shall be 30 psi (206 kPa)."
 int CRIT_PRESSURE = 50; // req 26: "The critical pressure shall be 50 psi (344 kPa)."
 int pressure = 25;
+int DEFAULT_MAX_TEMP = 100; // req 27: "The default maximum temperature shall be 100°C."
+int pressureTempRange = 10; // req 21: "The pressure shall increase faster when then temperature is within a range of 100°C" user defined req 33: "10°C"
 
+// TODO need to retrieve 
 void updatePressure() {
   // req 20: "The pressure shall increase when the water level surpasses the second to highest water level sensor."
   if (waterLevel > sensor3WaterLevel) {
