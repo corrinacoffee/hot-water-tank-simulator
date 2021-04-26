@@ -10,6 +10,7 @@ int DEFAULT_MAX_TEMP = 100; // req 27: "The default maximum temperature shall be
 int minTemp = DEFAULT_MIN_TEMP;
 int maxTemp = DEFAULT_MAX_TEMP;
 int temp = 20; // user defined req 32: "The temperature of water entering the tank shall be room temperature, or 20°C."
+int pressureRange = 10; // req 21: "The pressure shall increase faster when then temperature is within a range of 100°C" user defined req 33: "10°C"
 
 void updateTemp() {
   if (heater) {
