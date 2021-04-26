@@ -22,7 +22,7 @@ void updatePressureBasedOnWaterLevel() {
 
 // TODO use real time construct to know tempSensor from temperature module
 // TODO use real time construct to initiate action
-void updatePressureBasedOnTemperate() {
+void updatePressureBasedOnTemp() {
   // req 21: "The pressure shall increase faster when then temperature is within a range of 100°C."
   if (tempSensor > DEFAULT_MAX_TEMP + pressureTempRange) {
     pressure++;
