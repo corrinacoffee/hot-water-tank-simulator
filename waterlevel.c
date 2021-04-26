@@ -53,25 +53,6 @@ int reachedWaterLevelSensor() {
     return 0;
   }
 }
-  
-// param open true if open, false if close
-void setInValve1Open(bool open) {
-  inValve1 = open;
-}
-
-// param open true if open, false if close
-void setInValve2Open(bool open) {
-  inValve1 = open;
-}
-
-// param open true if open, false if close
-void setOutValveOpen(bool open) {
-  if (waterLevel >= sensor4WaterLevel) {
-    outValve = true;
-  } else {
-    outValve = open;
-  }
-}
 
 // req 29: "The system shall allow moving a water level sensor."
 void setWaterLevelSensor(int sensorNumber, int newWaterLevel) {
@@ -93,3 +74,23 @@ void setWaterLevelSensor(int sensorNumber, int newWaterLevel) {
         sensor4WaterLevel = newWaterLevel;
       }
   }
+}
+
+// param open true if open, false if close
+void setInValve1Open(bool open) {
+  inValve1 = open;
+}
+
+// param open true if open, false if close
+void setInValve2Open(bool open) {
+  inValve1 = open;
+}
+
+// param open true if open, false if close
+void setOutValveOpen(bool open) {
+  if (waterLevel >= sensor4WaterLevel) {
+    outValve = true;
+  } else {
+    outValve = open;
+  }
+}
