@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdbool.h>
 
 // true if on, false if off
