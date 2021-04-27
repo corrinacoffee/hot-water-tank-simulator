@@ -34,4 +34,3 @@ void PRESSURE_StateMachine(void) {
 		while (1); // should never reach here
 	}
 }
-
