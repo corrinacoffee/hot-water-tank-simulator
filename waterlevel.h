@@ -16,13 +16,13 @@ typedef enum {
 } water_sensor_level_t;
 
 typedef struct {
+	water_sensor_level_t previous_sensor;
 	water_sensor_level_t current_sensor;
 	int water_level;
 } water_sensor_t;
 
 /* Function prototypes */
 void WATER_Init(void);
-
-water_sensor_level_t WATER_RequestLevel(void);
+void setWaterLevelSensor(int sensorNumber, int newWaterLevel);
 
 #endif
