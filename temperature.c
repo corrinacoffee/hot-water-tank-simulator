@@ -1,47 +1,56 @@
-// FIXME fix Corrina's bad syntax, make it more C less Java
+#include "temperature.h"
+#include "commondefs.h"
 
-#include <stdio.h>
-#include <stdbool.h>
-
+// req 15: "The system shall have a water heater."
 // true if on, false if off
-bool heater = false; // req 15: "The system shall have a water heater."
+bool heater = false;
 
-// in degrees celcius
-int DEFAULT_MIN_TEMP = 10; // req 28: "The default minimum temperature shall be 10°C."
-int DEFAULT_MAX_TEMP = 100; // req 27: "The default maximum temperature shall be 100°C."
-int minTemp = DEFAULT_MIN_TEMP;
-int maxTemp = DEFAULT_MAX_TEMP;
-int tempSensor = 20; // user defined req 32: "The temperature of water entering the tank shall be room temperature, or 20°C."
+static int temp_sensor;
+static int min_target_temp;
+static int max_target_temp;
 
-// TODO use real time construct to perform periodically
-void updateTemp() {
-  if (heater) {
-    tempSensor++;
-  }
+static temp_sensor_t temp_sensor;
+
+TASK_ID temp_tasks[2];
+
+void TEMP_Init(void) {
+	temp_sensor.temp = ROOM_TEMP;
+	min_target_temp = DEFAULT_MIN_TARGET_TEMP;
+	max_target_temp = DEFAULT_MAX_TARGET_TEMP;
+	
+	waterlevel_tasks[0] = taskSpawn("tTempSim", 95, 0x100, 2000, (FUNCPTR)tempSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+//	waterlevel_tasks[1] = taskSpawn("tTempSensor". 95, 0x100, 2000, (FUNCPTR))
 }
 
-// TODO use real time construct to initiate action
+void tempSimulator() {
+	if (heater) {
+		temp_sensor++;
+	} else {
+		temp_sensor--;
+	}
+}
+
 // req 17: "The system shall turn on the water heater when the temperature is below the minimum."
 // req 18: "The system shall turn off the water heater when the temperature is above the maximum."
 void tempSensorControlHeater() {
-  if (tempSensor < minTemp) {
+  if (temp_sensor < min_target_temp) {
     heater = true;
   }
-  if (tempSensor > maxTemp) {
+  if (temp_sensor > max_target_temp) {
     heater = false;
   }
 }
 
-// req 30: "The system shall allow changing the temperature sensor’s minimum value."
-void setMinTemp(int newMinTemp) {
-  if (newMinTemp > 0 && newMinTemp < maxTemp) {
-    minTemp = newMinTemp;
+// req 30: "The system shall allow changing the temperature sensors minimum value."
+void setMinTemp(int new_min_temp) {
+  if (new_min_temp > 0 && new_min_temp < max_target_temp) {
+    min_target_temp = new_min_temp;
   }
 }
 
-// req 31: "The system shall allow changing the temperature sensor’s maximum value."
-void setMaxTemp(int newMaxTemp) {
-  if (newMaxTemp > 0 && newMaxTemp > minTemp) {
-    maxTemp = newMaxTemp;
+// req 31: "The system shall allow changing the temperature sensors maximum value."
+void setMaxTemp(int new_max_temp) {
+  if (new_max_temp > 0 && new_max_temp > min_target_temp) {
+    max_target_temp = new_max_temp;
   }
 }
