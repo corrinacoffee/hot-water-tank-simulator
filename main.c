@@ -21,6 +21,7 @@ void record(char *fmt) {
 }
 
 int main(void) {
-	TEMP_Init();
 	WATER_Init();
+	TEMP_Init();
+	PRESSURE_Init();
 }
