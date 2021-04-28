@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <logLib.h>
+#include <taskLib.h>
+#include <sysLib.h>
 #include "waterlevel.h"
 #include "commondefs.h"
+#include "pressure.h"
 #include "main.h"
 
 // req 8: "The system shall have two inlet valves."
@@ -20,39 +23,64 @@ static int sensor_level_high;
 
 static water_sensor_t water;
 
-TASK_ID waterlevel_tasks[2];
+TASK_ID waterlevel_tasks[3];
+
+MSG_Q_ID water_queue;
+
+void send(void)
+{
+	message_struct_t message;
+	
+	message.state = water.current_sensor;
+	message.timestamp = sysClkRateGet() / tickGet();
+	
+	msgQSend(water_queue, (char *)&message, MESSAGE_SIZE, NO_WAIT, MSG_PRI_NORMAL);
+}
 
 // req 10: "Water shall enter the tank if either inlet valve is open."
 // req 11: "Water shall enter the tank faster when both inlets are open than when one is open."
 static void waterFlowSimulator(int param) {
-	if (in_valve_a && in_valve_b) {
-		water.water_level += 2;
-	} else if (in_valve_a || in_valve_b) {
-		water.water_level++;
-	}
-	if (out_valve) {
-		water.water_level--;
+	while (1) {
+		if (in_valve_a && in_valve_b) {
+			water.water_level += 2;
+		} else if (in_valve_a || in_valve_b) {
+			water.water_level++;
+		}
+		
+		if (out_valve) {
+			water.water_level--;
+		}
+		
+		// TODO delay
 	}
 }
 
 // req 12: "The system shall indicate when the water level reaches a certain sensor."
 static void waterLevelSensorSimulator(int param) {
 	char message[255];
-	if (water.water_level >= sensor_level_high) {
-		  water.current_sensor = WATER_SENSOR_HIGH;
-		  out_valve = true; // req 14: "The system shall open the outlet valve when the water level reaches the highest sensor."
-	  } else if (water.water_level >= sensor_level_midhigh) {
-		  water.current_sensor = WATER_SENSOR_MIDHIGH;
-	  } else if (water.water_level >= sensor_level_lowmid) {
-		  water.current_sensor = WATER_SENSOR_LOWMID;
-	  } else if (water.water_level >= sensor_level_low) {
-		  water.current_sensor = WATER_SENSOR_LOW;
-	  }
-	  if (water.current_sensor != water.previous_sensor) {
-		  sprintf(message, "Water level has reached water sensor %d", water.current_sensor);
-		  record(message);
-		  water.previous_sensor = water.current_sensor;
-	  }
+	while (1) {
+		if (water.water_level >= sensor_level_high) {
+			  water.current_sensor = WATER_SENSOR_HIGH;
+			  out_valve = true; // req 14: "The system shall open the outlet valve when the water level reaches the highest sensor."
+		  } else if (water.water_level >= sensor_level_midhigh) {
+			  water.current_sensor = WATER_SENSOR_MIDHIGH;
+		  } else if (water.water_level >= sensor_level_lowmid) {
+			  water.current_sensor = WATER_SENSOR_LOWMID;
+		  } else if (water.water_level >= sensor_level_low) {
+			  water.current_sensor = WATER_SENSOR_LOW;
+		  } else if (water.water_level >= 0) {
+			  water.current_sensor = WATER_SENSOR_NONE;
+		  }
+		
+		  if (water.current_sensor != water.previous_sensor) {
+			  sprintf(message, "Water level has reached water sensor %d", water.current_sensor);
+			  record(message);
+			  water.previous_sensor = water.current_sensor;
+			  send();
+		  }
+		  
+		  // TODO delay
+	}
 }
 
 // req 29: "The system shall allow moving a water level sensor."
@@ -78,6 +106,7 @@ void setWaterLevelSensor(int sensorNumber, int newWaterLevel) {
 }
 
 void WATER_Init(void) {
+	int i;
 	water.previous_sensor = WATER_SENSOR_NONE;
 	water.current_sensor = WATER_SENSOR_NONE;
 	water.water_level = 0;
@@ -94,4 +123,8 @@ void WATER_Init(void) {
 	
 	waterlevel_tasks[0] = taskSpawn("tWaterFlowSim", 95, 0x100, 2000, (FUNCPTR)waterFlowSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	waterlevel_tasks[1] = taskSpawn("tWaterSensorSim", 95, 0x100, 2000, (FUNCPTR)waterLevelSensorSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	
+	if ((water_queue = msgQCreate(MESSAGE_Q_SIZE, MESSAGE_SIZE, MSG_Q_FIFO)) == MSG_Q_ID_NULL)
+		record("Water level to pressure queue not created.");
+	waterlevel_tasks[2] = taskSpawn("tSendWaterToPressureQueue", 95, 0x100, 2000, (FUNCPTR)send, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
