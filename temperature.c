@@ -1,3 +1,4 @@
+#include <taskLib.h>
 #include "temperature.h"
 #include "commondefs.h"
 
@@ -5,7 +6,6 @@
 // true if on, false if off
 bool heater = false;
 
-static int temp_sensor;
 static int min_target_temp;
 static int max_target_temp;
 
@@ -13,32 +13,50 @@ static temp_sensor_t temp_sensor;
 
 TASK_ID temp_tasks[2];
 
-void TEMP_Init(void) {
-	temp_sensor.temp = ROOM_TEMP;
-	min_target_temp = DEFAULT_MIN_TARGET_TEMP;
-	max_target_temp = DEFAULT_MAX_TARGET_TEMP;
-	
-	waterlevel_tasks[0] = taskSpawn("tTempSim", 95, 0x100, 2000, (FUNCPTR)tempSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-//	waterlevel_tasks[1] = taskSpawn("tTempSensor". 95, 0x100, 2000, (FUNCPTR))
-}
-
-void tempSimulator() {
+void tempSimulator(int param) {
 	if (heater) {
-		temp_sensor++;
+		temp_sensor.temp += 2;
 	} else {
-		temp_sensor--;
+		temp_sensor.temp--;
 	}
 }
 
 // req 17: "The system shall turn on the water heater when the temperature is below the minimum."
 // req 18: "The system shall turn off the water heater when the temperature is above the maximum."
-void tempSensorControlHeater() {
-  if (temp_sensor < min_target_temp) {
-    heater = true;
-  }
-  if (temp_sensor > max_target_temp) {
-    heater = false;
-  }
+static void tempSensorSimulator(int param) {
+	char message[255];
+	if (temp_sensor.temp >= MAX_TEMP) {
+		temp_sensor.current_state = TEMP_CRIT_HIGH;
+		heater = false;
+	} else if (temp_sensor.temp >= max_target_temp) {
+		temp_sensor.current_state = TEMP_HIGH;
+		heater = false;
+	} else if (temp_sensor.temp >= min_target_temp) {
+		temp_sensor.current_state = TEMP_IN_TARGET;
+		heater = false;
+	} else if (temp_sensor.temp >= MIN_TEMP) {
+		temp_sensor.current_state = TEMP_LOW;
+		heater = true;
+	} else if (temp_sensor.temp >= 0) {
+		temp_sensor.current_state = TEMP_CRIT_LOW;
+		heater = true;
+	} else {
+		temp_sensor.current_state = TEMP_ERROR;
+	}
+	if (temp_sensor.current_state != temp_sensor.previous_state) {
+		sprintf(message, "Temperature has reached state %d", temp_sensor.current_state);
+		record(message);
+		temp_sensor.previous_state = temp_sensor.current_state;
+	}
+}
+
+void TEMP_Init(void) {
+	temp_sensor.temp = ROOM_TEMP;
+	min_target_temp = DEFAULT_MIN_TARGET_TEMP;
+	max_target_temp = DEFAULT_MAX_TARGET_TEMP;
+	
+	temp_tasks[0] = taskSpawn("tTempSim", 95, 0x100, 2000, (FUNCPTR)tempSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	temp_tasks[1] = taskSpawn("tTempSensorSim", 95, 0x100, 2000, (FUNCPTR)tempSensorSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 // req 30: "The system shall allow changing the temperature sensors minimum value."
