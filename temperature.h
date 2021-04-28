@@ -28,5 +28,7 @@ typedef struct temp_sensor_s {
 
 /* Function prototyes */
 void TEMP_Init(void);
+void setMinTemp(int new_min_temp);
+void setMaxTemp(int new_max_temp);
 
 #endif
