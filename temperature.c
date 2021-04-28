@@ -14,10 +14,13 @@ static temp_sensor_t temp_sensor;
 TASK_ID temp_tasks[2];
 
 void tempSimulator(int param) {
-	if (heater) {
-		temp_sensor.temp += 2;
-	} else {
-		temp_sensor.temp--;
+	while (1) {
+		if (heater) {
+			temp_sensor.temp += 2;
+		} else {
+			temp_sensor.temp--;
+		}
+		// TODO delay
 	}
 }
 
@@ -25,28 +28,34 @@ void tempSimulator(int param) {
 // req 18: "The system shall turn off the water heater when the temperature is above the maximum."
 static void tempSensorSimulator(int param) {
 	char message[255];
-	if (temp_sensor.temp >= MAX_TEMP) {
-		temp_sensor.current_state = TEMP_CRIT_HIGH;
-		heater = false;
-	} else if (temp_sensor.temp >= max_target_temp) {
-		temp_sensor.current_state = TEMP_HIGH;
-		heater = false;
-	} else if (temp_sensor.temp >= min_target_temp) {
-		temp_sensor.current_state = TEMP_IN_TARGET;
-		heater = false;
-	} else if (temp_sensor.temp >= MIN_TEMP) {
-		temp_sensor.current_state = TEMP_LOW;
-		heater = true;
-	} else if (temp_sensor.temp >= 0) {
-		temp_sensor.current_state = TEMP_CRIT_LOW;
-		heater = true;
-	} else {
-		temp_sensor.current_state = TEMP_ERROR;
-	}
-	if (temp_sensor.current_state != temp_sensor.previous_state) {
-		sprintf(message, "Temperature has reached state %d", temp_sensor.current_state);
-		record(message);
-		temp_sensor.previous_state = temp_sensor.current_state;
+	
+	while (1) {
+		if (temp_sensor.temp >= MAX_TEMP) {
+			temp_sensor.current_state = TEMP_CRIT_HIGH;
+			heater = false;
+		} else if (temp_sensor.temp >= max_target_temp) {
+			temp_sensor.current_state = TEMP_HIGH;
+			heater = false;
+		} else if (temp_sensor.temp >= min_target_temp) {
+			temp_sensor.current_state = TEMP_IN_TARGET;
+			heater = false;
+		} else if (temp_sensor.temp >= MIN_TEMP) {
+			temp_sensor.current_state = TEMP_LOW;
+			heater = true;
+		} else if (temp_sensor.temp >= 0) {
+			temp_sensor.current_state = TEMP_CRIT_LOW;
+			heater = true;
+		} else {
+			temp_sensor.current_state = TEMP_ERROR;
+		}
+		
+		if (temp_sensor.current_state != temp_sensor.previous_state) {
+			sprintf(message, "Temperature has reached state %d", temp_sensor.current_state);
+			record(message);
+			temp_sensor.previous_state = temp_sensor.current_state;
+		}
+	
+		// TODO delay
 	}
 }
 
