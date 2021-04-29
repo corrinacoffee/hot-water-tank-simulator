@@ -16,7 +16,7 @@ typedef uint8_t bool;
 
 typedef struct {
 	int state;
-	int timestamp;
+	int value;
 } message_struct_t;
 
 #endif
