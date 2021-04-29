@@ -7,7 +7,9 @@
  */
 
 /* Includes */
+#include <sysLib.h>
 #include "waterlevel.h"
+#include "temperature.h" //added temperature includes
 #include "commondefs.h"
 
 /* Definitions and Macros */
@@ -17,6 +19,8 @@
 #define PRESSURE_TEMP_RANGE 10 	// req 21: "The pressure shall increase faster when then temperature is within a range of 100°C"
 
 #define PRESSURE_Q_MAX_MESSAGES 50
+
+#define PRESSURE_DELAY	(sysClkRateGet())
 
 /* Types, enum, and structure definitions */
 typedef enum {
@@ -43,5 +47,6 @@ typedef struct {
 void PRESSURE_Init(void);
 void PRESSURE_StateMachine(void);
 void PRESSURE_AddMessage(message_struct_t message);
+void PRESSURE_SetState(pressure_state_t state);
 
 #endif
