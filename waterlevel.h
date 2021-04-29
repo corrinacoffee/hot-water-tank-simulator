@@ -5,7 +5,7 @@
 
 /* Definitions and Macros */
 #define MAX_WATER_LEVEL 50	// req 23: "The volume of the tank shall be 50 L."
-
+#define SIGNO 30 //added definition for user defined signal number 30
 /* Type, enum, and struct definitions */
 typedef enum {
 	WATER_SENSOR_NONE,
@@ -24,5 +24,7 @@ typedef struct {
 /* Function prototypes */
 void WATER_Init(void);
 void setWaterLevelSensor(int sensorNumber, int newWaterLevel);
+void sigHand(int sigNo);
+TASK_ID WATER_getTaskId(void);
 
 #endif
