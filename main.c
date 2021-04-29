@@ -17,7 +17,7 @@ static bool heater = false;
 void record(char *fmt) {
   int timeInTicks = tickGet();
   int timeInSec = sysClkRateGet() / timeInTicks;
-  printf("%d %d %s", timeInTicks, timeInSec, fmt); // TODO format nicely
+  printf("%d %d %s\n", timeInTicks, timeInSec, fmt); // TODO format nicely
 }
 
 int main(void) {
