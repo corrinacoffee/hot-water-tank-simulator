@@ -11,7 +11,21 @@ static int max_target_temp;
 
 static temp_sensor_t temp_sensor;
 
-TASK_ID temp_tasks[2];
+TASK_ID temp_tasks[3];
+
+//named message queue - eli
+MSG_Q_ID temp_queue;
+
+//created temp sending function - eli
+void send_temp(void) 
+{
+	message_struct_t message;
+	
+	message.state = temp_sensor.current_state;
+	message.value = temp_sensor.temp;
+	
+	msgQSend(temp_queue, (char *)&message, MESSAGE_SIZE, NO_WAIT, MSG_PRI_NORMAL);
+}
 
 void tempSimulator(int param) {
 	while (1) {
@@ -21,6 +35,8 @@ void tempSimulator(int param) {
 			temp_sensor.temp--;
 		}
 		// TODO delay
+		taskDelay(sysClkRateGet()*2); // quarter second delay - eli
+		
 	}
 }
 
@@ -31,6 +47,7 @@ static void tempSensorSimulator(int param) {
 	
 	while (1) {
 		if (temp_sensor.temp >= MAX_TEMP) {
+			// state is only included for safety purposes
 			temp_sensor.current_state = TEMP_CRIT_HIGH;
 			heater = false;
 		} else if (temp_sensor.temp >= max_target_temp) {
@@ -38,7 +55,6 @@ static void tempSensorSimulator(int param) {
 			heater = false;
 		} else if (temp_sensor.temp >= min_target_temp) {
 			temp_sensor.current_state = TEMP_IN_TARGET;
-			heater = false;
 		} else if (temp_sensor.temp >= MIN_TEMP) {
 			temp_sensor.current_state = TEMP_LOW;
 			heater = true;
@@ -50,12 +66,14 @@ static void tempSensorSimulator(int param) {
 		}
 		
 		if (temp_sensor.current_state != temp_sensor.previous_state) {
-			sprintf(message, "Temperature has reached state %d", temp_sensor.current_state);
-			record(message);
-			temp_sensor.previous_state = temp_sensor.current_state;
+			printf("Temperature has reached state %d\n", temp_sensor.current_state);
+			send_temp();
+			//record(message);
+			//temp_sensor.previous_state = temp_sensor.current_state;
 		}
-	
+		printf("Temperature: %d\n", temp_sensor.temp);
 		// TODO delay
+		taskDelay(sysClkRateGet()*2); // quarter second delay - eli
 	}
 }
 
@@ -66,6 +84,11 @@ void TEMP_Init(void) {
 	
 	temp_tasks[0] = taskSpawn("tTempSim", 95, 0x100, 2000, (FUNCPTR)tempSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	temp_tasks[1] = taskSpawn("tTempSensorSim", 95, 0x100, 2000, (FUNCPTR)tempSensorSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	
+	//created msgQ for temp - eli
+	if ((temp_queue = msgQCreate(MESSAGE_Q_SIZE, MESSAGE_SIZE, MSG_Q_FIFO)) == MSG_Q_ID_NULL)
+			record("Temperature level to pressure queue not created.");
+		temp_tasks[2] = taskSpawn("tSendTempToPressureQueue", 95, 0x100, 2000, (FUNCPTR)send_temp, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 // req 30: "The system shall allow changing the temperature sensors minimum value."
