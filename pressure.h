@@ -15,7 +15,7 @@
 /* Definitions and Macros */
 #define PRESSURE_NOMINAL_MIN 20 // req 24: "The minimum nominal operating pressure shall be 20 psi (130 kPa)."
 #define PRESSURE_NOMINAL_MAX 30 // req 25: "The maximum nominal operating pressure shall be 30 psi (206 kPa)."
-#define PRESSURE_CRIT 50 		// req 26: "The critical pressure shall be 50 psi (344 kPa)."
+#define PRESSURE_CRIT 50 	// req 26: "The critical pressure shall be 50 psi (344 kPa)."
 #define PRESSURE_TEMP_RANGE 10 	// req 21: "The pressure shall increase faster when then temperature is within a range of 100°C"
 
 #define PRESSURE_Q_MAX_MESSAGES 50
