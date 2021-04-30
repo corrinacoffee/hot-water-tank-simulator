@@ -4,15 +4,15 @@
 #include "temperature.h"
 #include "commondefs.h"
 
-// req 15: "The system shall have a water heater."
-// req 15: "The system shall have a water heater."
-// true if on, false if off
-bool heater;
 
 static int min_target_temp;
 static int max_target_temp;
 
 static temp_sensor_t temp_sensor;
+
+// req 15: "The system shall have a water heater."
+// true if on, false if off
+bool heater;
 
 MSG_Q_ID temp_queue;
 
@@ -20,7 +20,7 @@ TASK_ID temp_tasks[2];
 
 SEM_ID heater_sem;
 
-void send_temp(void) 
+static void send_temp(void) 
 {
 	message_struct_t message;
 	
@@ -33,13 +33,13 @@ void send_temp(void)
 	msgQSend(temp_queue, (char *)&message, MESSAGE_SIZE, NO_WAIT, MSG_PRI_NORMAL);
 }
 
-void tempSimulator(int param) {
+static void tempSimulator(int param) {
 	while (1) {
-		if (heater) {
+		if (heater)
 			temp_sensor.temp += 2;
-		} else {
+		else
 			temp_sensor.temp--;
-		}
+		
 		taskDelay(sysClkRateGet()*2);
 	}
 }
@@ -54,45 +54,42 @@ static void tempSensorSimulator(int param) {
 			// state is only included for safety purposes
 			temp_sensor.current_state = TEMP_CRIT_HIGH;
 			
-			if (semTake(heater_sem, NO_WAIT) == OK) {
+			if (semTake(heater_sem, NO_WAIT) == OK)
 				heater = false;
-				semGive(heater_sem);
-			}
 		} else if (temp_sensor.temp >= max_target_temp) {
 			temp_sensor.current_state = TEMP_HIGH;
 			
-			if (semTake(heater_sem, NO_WAIT) == OK) {
+			if (semTake(heater_sem, NO_WAIT) == OK)
 				heater = false;
-				semGive(heater_sem);
-			}
 		} else if (temp_sensor.temp >= min_target_temp) {
 			temp_sensor.current_state = TEMP_IN_TARGET;
 		} else if (temp_sensor.temp >= MIN_TEMP) {
 			temp_sensor.current_state = TEMP_LOW;
 			
-			if (semTake(heater_sem, NO_WAIT) == OK) {
+			if (semTake(heater_sem, NO_WAIT) == OK)
 				heater = true;
-				semGive(heater_sem);
-			}
-		} else if (temp_sensor.temp >= 0) {
+		} else if (temp_sensor.temp <= 0) {
 			temp_sensor.current_state = TEMP_CRIT_LOW;
 			
-			if (semTake(heater_sem, NO_WAIT) == OK) {
+			if (semTake(heater_sem, NO_WAIT) == OK)
 				heater = true;
-				semGive(heater_sem);
-			}
 		} else {
 			temp_sensor.current_state = TEMP_ERROR;
 		}
 		
 		if (temp_sensor.current_state != temp_sensor.previous_state) {
+			semGive(heater_sem);
 			temp_sensor.previous_state = temp_sensor.current_state;
+			
 			sprintf(message, "Temperature has reached state %d\n", temp_sensor.current_state);
 			record(message);
+
+			sprintf(message, "Temperature: %d\n", temp_sensor.temp);
+			record(message);
+			
 			send_temp();
 		}
-		sprintf(message, "Temperature: %d\n", temp_sensor.temp);
-		record(message);
+		
 		taskDelay(sysClkRateGet()*2);
 	}
 }
@@ -117,16 +114,46 @@ void TEMP_TaskInit(void) {
 	temp_tasks[1] = taskSpawn("tTempSensorSim", 100, 0x100, 2000, (FUNCPTR)tempSensorSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
+void TEMP_TestCritLowTemp(void) {
+	TEMP_Init();
+	temp_sensor.temp = 0;
+	
+	TEMP_TaskInit();
+}
+
+void TEMP_TestLowTemp(void) {
+	TEMP_Init();
+	temp_sensor.temp = 15;
+	
+	TEMP_TaskInit();
+}
+
+void TEMP_TestHighTemp(void) {
+	TEMP_Init();
+	
+	heater = true;
+	temp_sensor.temp = 85;
+	
+	TEMP_TaskInit();
+}
+
+void TEMP_TestCritHighTemp(void) {
+	TEMP_Init();
+	
+	heater = true;
+	temp_sensor.temp = 100;
+	
+	TEMP_TaskInit();
+}
+
 // req 30: "The system shall allow changing the temperature sensors minimum value."
-void setMinTemp(int new_min_temp) {
-	if (new_min_temp > 0 && new_min_temp < max_target_temp) {
+void TEMP_SetMin(int new_min_temp) {
+	if (new_min_temp > 0 && new_min_temp < max_target_temp)
 		min_target_temp = new_min_temp;
-	}
 }
 
 // req 31: "The system shall allow changing the temperature sensors maximum value."
-void setMaxTemp(int new_max_temp) {
-	if (new_max_temp > 0 && new_max_temp > min_target_temp) {
+void TEMP_SetMax(int new_max_temp) {
+	if (new_max_temp > 0 && new_max_temp > min_target_temp)
 		max_target_temp = new_max_temp;
-	}
 }
