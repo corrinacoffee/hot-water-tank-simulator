@@ -3,6 +3,8 @@
 #include <taskLib.h>
 #include <sysLib.h>
 #include <sigLib.h>
+#include <semLib.h>
+
 #include "waterlevel.h"
 #include "commondefs.h"
 #include "pressure.h"
@@ -14,6 +16,7 @@
 bool in_valve_a;
 bool in_valve_b;
 bool out_valve;
+
 
 // req 12: "The system shall have four water level sensors."
 // in liters
@@ -28,11 +31,16 @@ TASK_ID waterlevel_tasks[3];
 
 MSG_Q_ID water_queue;
 
+SEM_ID out_valve_sem;
+
 void send_water(void)
 {
 	message_struct_t message;
 	
-	message.state = water.current_sensor;
+	message.state = 0;
+	message.value = 0;
+	
+	message.state = (int)water.current_sensor;
 	message.value = water.water_level;
 	
 	msgQSend(water_queue, (char *)&message, MESSAGE_SIZE, NO_WAIT, MSG_PRI_NORMAL);
@@ -59,44 +67,63 @@ static void waterFlowSimulator(int param) {
 
 // req 12: "The system shall indicate when the water level reaches a certain sensor."
 static void waterLevelSensorSimulator(int param) {
-	char message[255];
-	signal(SIGNO,sigHand);//added signal registration - eli
+	char message[MESSAGE_STRING_SIZE];
+	
+	signal(SIGNO, sigHand);
 	
 	while (1) {
 		if (water.water_level >= sensor_level_high) {
 			  water.current_sensor = WATER_SENSOR_HIGH;
-			  out_valve = true; // req 14: "The system shall open the outlet valve when the water level reaches the highest sensor."
+			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+				  out_valve = true; // req 14: "The system shall open the outlet valve when the water level reaches the highest sensor."
+				  semGive(out_valve_sem);
+			  }
 		  } else if (water.water_level >= sensor_level_midhigh) {
 			  water.current_sensor = WATER_SENSOR_MIDHIGH;
-			  out_valve = false; // added valve states for each state transition - eli
+			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+				  out_valve = false; // added valve states for each state transition - eli
+				  semGive(out_valve_sem);
+			  }
 			  in_valve_a = false;
 			  in_valve_b = false;
 		  } else if (water.water_level >= sensor_level_lowmid) {
 			  water.current_sensor = WATER_SENSOR_LOWMID;
-			  out_valve = false;
+			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+				  out_valve = false;
+				  semGive(out_valve_sem);
+			  }
 			  in_valve_a = true;
 			  in_valve_b = false;
 		  } else if (water.water_level >= sensor_level_low) {
 			  water.current_sensor = WATER_SENSOR_LOW;
-			  out_valve = false;
+			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+				  out_valve = false;
+				  semGive(out_valve_sem);
+			  }
 			  in_valve_a = true;
 			  in_valve_b = true;
 		  } else if (water.water_level >= 0) {
 			  water.current_sensor = WATER_SENSOR_NONE;
-			  out_valve = false;
+			  
+			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+				  out_valve = false;
+				  semGive(out_valve_sem);
+			  }
+			  
 			  in_valve_a = true;
 			  in_valve_b = true;
 		  } 
 		
 		  if (water.current_sensor != water.previous_sensor) {
-			  printf("Water level has reached water sensor %d\n", water.current_sensor);
-//			  record(message);
+			  sprintf(message, "Water level has reached water sensor %d\n", water.current_sensor);
 			  water.previous_sensor = water.current_sensor;
+			  record(message);
 			  send_water();
 		  }
-		  printf("Water level: %d\n", water.water_level);
 		  
-		  // TODO delay
+		  sprintf(message, "Water level: %d\n", water.water_level);
+		  record(message);
+		  
 		  taskDelay(sysClkRateGet()*2); // quarter second delay - eli
 	}
 }
@@ -125,6 +152,7 @@ void setWaterLevelSensor(int sensorNumber, int newWaterLevel) {
 
 void WATER_Init(void) {
 	int i;
+	
 	water.previous_sensor = WATER_SENSOR_NONE;
 	water.current_sensor = WATER_SENSOR_NONE;
 	water.water_level = 0;
@@ -139,13 +167,19 @@ void WATER_Init(void) {
 	sensor_level_midhigh = 30;
 	sensor_level_high = 40;
 	
-	waterlevel_tasks[0] = taskSpawn("tWaterFlowSim", 95, 0x100, 2000, (FUNCPTR)waterFlowSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	waterlevel_tasks[1] = taskSpawn("tWaterSensorSim", 95, 0x100, 2000, (FUNCPTR)waterLevelSensorSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	out_valve_sem = semMCreate(SEM_Q_PRIORITY | SEM_DELETE_SAFE);
 	
 	if ((water_queue = msgQCreate(MESSAGE_Q_SIZE, MESSAGE_SIZE, MSG_Q_FIFO)) == MSG_Q_ID_NULL)
 		record("Water level to pressure queue not created.");
-	waterlevel_tasks[2] = taskSpawn("tSendWaterToPressureQueue", 95, 0x100, 2000, (FUNCPTR)send_water, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	
+	
 }
+
+void WATER_TaskInit(void) {	
+	waterlevel_tasks[0] = taskSpawn("tWaterFlowSim", 100, 0x100, 2000, (FUNCPTR)waterFlowSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	waterlevel_tasks[1] = taskSpawn("tWaterSensorSim", 100, 0x100, 2000, (FUNCPTR)waterLevelSensorSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+}
+
 //added signal handler - eli
 void sigHand(int sigNo){
 	switch(sigNo){
