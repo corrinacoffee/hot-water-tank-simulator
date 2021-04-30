@@ -33,7 +33,7 @@ MSG_Q_ID water_queue;
 
 SEM_ID out_valve_sem;
 
-void send_water(void)
+static void send_water(void)
 {
 	message_struct_t message;
 	
@@ -68,84 +68,90 @@ static void waterFlowSimulator(int param) {
 static void waterLevelSensorSimulator(int param) {
 	char message[MESSAGE_STRING_SIZE];
 	
-	signal(SIGNO, sigHand);
+	signal(SIGNO, WATER_SignalHandler);
 	
 	while (1) {
 		if (water.water_level >= sensor_level_high) {
 			  water.current_sensor = WATER_SENSOR_HIGH;
-			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+			  
+			  if (semTake(out_valve_sem, NO_WAIT) == OK)
 				  out_valve = true; // req 14: "The system shall open the outlet valve when the water level reaches the highest sensor."
-				  semGive(out_valve_sem);
-			  }
+			  
+			  in_valve_a = false;
+			  in_valve_b = false;
 		  } else if (water.water_level >= sensor_level_midhigh) {
 			  water.current_sensor = WATER_SENSOR_MIDHIGH;
-			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+			  
+			  if (semTake(out_valve_sem, NO_WAIT) == OK)
 				  out_valve = false;
-				  semGive(out_valve_sem);
-			  }
+			  
 			  in_valve_a = false;
 			  in_valve_b = false;
 		  } else if (water.water_level >= sensor_level_lowmid) {
 			  water.current_sensor = WATER_SENSOR_LOWMID;
-			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
-				  out_valve = false;
-				  semGive(out_valve_sem);
-			  }
+			  
+			  if (semTake(out_valve_sem, NO_WAIT) == OK)
+				  out_valve = false;\
+				  
 			  in_valve_a = true;
 			  in_valve_b = false;
 		  } else if (water.water_level >= sensor_level_low) {
 			  water.current_sensor = WATER_SENSOR_LOW;
-			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+			  
+			  if (semTake(out_valve_sem, NO_WAIT) == OK)
 				  out_valve = false;
-				  semGive(out_valve_sem);
-			  }
+			  
 			  in_valve_a = true;
 			  in_valve_b = true;
 		  } else if (water.water_level >= 0) {
 			  water.current_sensor = WATER_SENSOR_NONE;
 			  
-			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
+			  if (semTake(out_valve_sem, NO_WAIT) == OK)
 				  out_valve = false;
-				  semGive(out_valve_sem);
-			  }
 			  
 			  in_valve_a = true;
 			  in_valve_b = true;
 		  } 
 		
 		  if (water.current_sensor != water.previous_sensor) {
-			  sprintf(message, "Water level has reached water sensor %d\n", water.current_sensor);
+			  semGive(out_valve_sem);
 			  water.previous_sensor = water.current_sensor;
+			  
+			  sprintf(message, "Water level has reached water sensor %d\n", water.current_sensor);
 			  record(message);
+
+			  sprintf(message, "Water level: %d\n", water.water_level);
+			  record(message);
+
 			  send_water();
 		  }
-		  
-		  sprintf(message, "Water level: %d\n", water.water_level);
-		  record(message);
 		  
 		  taskDelay(sysClkRateGet()*2);
 	}
 }
 
 // req 29: "The system shall allow moving a water level sensor."
-void setWaterLevelSensor(int sensorNumber, int newWaterLevel) {
+void WATER_SetSensorToLevel(int sensorNumber, int newWaterLevel) {
   switch(sensorNumber) {
-    case 1:
-      if (newWaterLevel > 0 && newWaterLevel < sensor_level_lowmid) {
+    case WATER_SENSOR_LOW:
+      if (newWaterLevel > 0 && newWaterLevel < sensor_level_lowmid)
         sensor_level_low = newWaterLevel;
-      }
-    case 2:
-      if (newWaterLevel > sensor_level_low && newWaterLevel < sensor_level_midhigh) {
+      break;
+    case WATER_SENSOR_LOWMID:
+      if (newWaterLevel > sensor_level_low && newWaterLevel < sensor_level_midhigh)
         sensor_level_lowmid = newWaterLevel;
-      }
-    case 3:
-      if (newWaterLevel > sensor_level_lowmid && newWaterLevel < sensor_level_high) {
+      break;
+    case WATER_SENSOR_MIDHIGH:
+      if (newWaterLevel > sensor_level_lowmid && newWaterLevel < sensor_level_high)
         sensor_level_midhigh = newWaterLevel;
-      }
-    case 4:
-      if (newWaterLevel > sensor_level_midhigh && newWaterLevel < MAX_WATER_LEVEL) {
+      break;
+    case WATER_SENSOR_HIGH:
+      if (newWaterLevel > sensor_level_midhigh && newWaterLevel < MAX_WATER_LEVEL)
         sensor_level_high = newWaterLevel;
-      }
+      break;
+    default:
+    	record("Invalid sensor\n");
+    	return;
   }
 }
 
@@ -179,8 +185,36 @@ void WATER_TaskInit(void) {
 	waterlevel_tasks[1] = taskSpawn("tWaterSensorSim", 100, 0x100, 2000, (FUNCPTR)waterLevelSensorSimulator, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
+void WATER_TestVeryLowWaterLevel(void) {
+	WATER_Init();
+	water.water_level = 1;
+	
+	WATER_TaskInit();
+}
+
+void WATER_TestLowWaterLevel(void) {
+	WATER_Init();
+	water.water_level = 10;
+	
+	WATER_TaskInit();
+}
+
+void WATER_TestAvgWaterLevel(void) {
+	WATER_Init();
+	water.water_level = 20;
+	
+	WATER_TaskInit();
+}
+
+void WATER_TestHighWaterLevel(void) {
+	WATER_Init();
+	water.water_level = 40;
+	
+	WATER_TaskInit();
+}
+
 //added signal handler - eli
-void sigHand(int sigNo){
+void WATER_SignalHandler(int sigNo){
 	switch(sigNo){
 	case(30):
 			//might need to take semaphore
