@@ -1,32 +1,38 @@
 #include <stdio.h>
 #include <taskLib.h>
-#include <sigLib.h> //added signals library
+#include <sigLib.h>
+#include <semLib.h>
 
 #include "pressure.h"
 #include "temperature.h"
 #include "waterlevel.h"
 #include "commondefs.h"
-
-static pressure_t pressure_sensor;
+#include "main.h"
 
 extern bool out_valve;
-extern MSG_Q_ID temp_queue;
-
-static pressure_sim_vars_t pressure_sim;
-
-TASK_ID pressure_tasks[4]; //changed to 4 tasks to accomodate the recieve temperature task
+extern bool heater;
 
 extern MSG_Q_ID water_queue;
 extern MSG_Q_ID temp_queue; //added temp queue extern def - eli
 
+extern SEM_ID out_valve_sem;
+extern SEM_ID heater_sem;
+
+static pressure_t pressure_sensor;
+static pressure_sim_vars_t pressure_sim;
+
+TASK_ID pressure_tasks[4]; //changed to 4 tasks to accomodate the recieve temperature task
+WDOG_ID pressure_watchdog;
+
 void receiveWaterLevel(int param)
 {
 	message_struct_t message;
+	char record_message[MESSAGE_STRING_SIZE];
 	
 	while (1) {
 		if (msgQReceive(water_queue, (char *)&message, MESSAGE_SIZE, NO_WAIT) > 0) {
-			printf("PRESSURE - Water Message received:\n");
-			printf("State: %d\n", message.state);
+			sprintf(record_message, "PRESSURE - Message Received:\n * Water Level: %d\n * State: %d\n", message.value, message.state);
+			record(record_message);
 		}
 		// TODO delay
 		taskDelay(PRESSURE_DELAY); // quarter second delay - eli
@@ -37,12 +43,13 @@ void receiveWaterLevel(int param)
 void receiveTempLevel(int param)
 {
 	message_struct_t message;
+	char record_message[256];
 	
 	while (1) {
 		if (msgQReceive(temp_queue, (char *)&message, MESSAGE_SIZE, NO_WAIT) > 0) {
 			pressure_sim.temperature = message.value;
-			printf("PRESSURE - Temp Message received:\n");
-			printf("Temp: %d\n", message.value);
+			sprintf(record_message, "PRESSURE - Message received:\n * Temp: %d\n * State %d\n", message.value);
+			record(record_message);
 		}
 		// TODO delay
 		taskDelay(PRESSURE_DELAY); // quarter second delay - eli
@@ -70,18 +77,36 @@ void pressureSim(int param) {
 	}
 }
 
+void pressure_handle_missed_deadline(int param) {
+	char log_message[MESSAGE_STRING_SIZE];
+	
+	if (pressure_sensor.pressure >= PRESSURE_CRIT) {
+		kill(WATER_getTaskId(), SIGNO);
+	}
+
+	record("Pressure sensor missed deadline; restarting task");
+	
+	taskRestart(pressure_tasks[0]);
+}
+
 void pressureSensorSim(int param) {
-	char message[255];
+	char message[MESSAGE_STRING_SIZE];
 	
 	while (1) {
+		wdStart(pressure_watchdog, PRESSURE_DELAY, (FUNCPTR)pressure_handle_missed_deadline, 0);
+	
 		if (pressure_sensor.pressure >= PRESSURE_CRIT) {
 			pressure_sensor.current_state = PRESSURE_STATE_CRITICAL;
 			// req 22: "The system shall open the outlet valve when the pressure reaches the critical pressure of 50 psi (344 kPa)."
-			// TODO signal
-			//possible implementation kill(tid,SIGNO); --> kill(waterlevel_tasks[1],SIGNO);
-			kill(WATER_getTaskId(),SIGNO);
+			// possible implementation kill(tid,SIGNO); --> kill(waterlevel_tasks[1],SIGNO);
+			if (out_valve != true && semTake(out_valve_sem, NO_WAIT) == OK)
+				kill(WATER_getTaskId(), SIGNO);
+			if (semTake(heater_sem, NO_WAIT) == OK)
+				heater = false;
 		} else if (pressure_sensor.pressure >= PRESSURE_NOMINAL_MAX) {
 			pressure_sensor.current_state = PRESSURE_STATE_HIGH;
+			semGive(out_valve_sem);
+			semGive(heater_sem);
 		} else if (pressure_sensor.pressure >= PRESSURE_NOMINAL_MIN) {
 			pressure_sensor.current_state = PRESSURE_STATE_NOMINAL;
 		} else if (pressure_sensor.pressure >= 0) {
@@ -91,13 +116,19 @@ void pressureSensorSim(int param) {
 		}
 	
 		if (pressure_sensor.current_state != pressure_sensor.previous_state) {
-			printf("Pressure has reached state %d\n", pressure_sensor.current_state);
-//			record(message);
+//			if (pressure_sensor.previous_state == PRESSURE_STATE_CRITICAL) {
+//				semGive(out_valve_sem);
+//				semGive(heater_sem);
+//			}
 			pressure_sensor.previous_state = pressure_sensor.current_state;
+			sprintf(message, "Pressure has reached state %d\n", pressure_sensor.current_state);
+			record(message);
 		}
-		printf("Pressure: %d\n", pressure_sensor.pressure);
-		// TODO delay
-		taskDelay(PRESSURE_DELAY); // quarter second delay - eli
+		
+		sprintf(message, "Pressure: %d\n", pressure_sensor.pressure);
+		record(message);
+
+		taskDelay(PRESSURE_DELAY / 2);
 	}
 }
 
@@ -106,11 +137,15 @@ void PRESSURE_Init(void) {
 	pressure_sensor.previous_state = PRESSURE_STATE_INIT;
 	pressure_sensor.pressure = 25;
 	
-	
-	pressure_tasks[0] = taskSpawn("tPressureSensorSim", 95, 0x100, 2000, (FUNCPTR)pressureSensorSim, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	pressure_tasks[1] = taskSpawn("tPressureSim", 95, 0x100, 2000, (FUNCPTR)pressureSim, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	pressure_tasks[2] = taskSpawn("tPressureReceiveWaterQueue", 95, 0x100, 2000, (FUNCPTR)receiveWaterLevel, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	pressure_tasks[3] = taskSpawn("tPressureReceiveTempQueue", 95, 0x100, 2000, (FUNCPTR)receiveTempLevel, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); //added task for temp queue recieve - eli
+	if ((pressure_watchdog = wdCreate()) == NULL)
+		record("Error creating pressure watchdog.\n");
+}
+
+void PRESSURE_TaskInit(void) {	
+	pressure_tasks[0] = taskSpawn("tPressureSensorSim", 100, 0x100, 2000, (FUNCPTR)pressureSensorSim, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	pressure_tasks[1] = taskSpawn("tPressureSim", 100, 0x100, 2000, (FUNCPTR)pressureSim, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	pressure_tasks[2] = taskSpawn("tPressureReceiveWaterQueue", 100, 0x100, 2000, (FUNCPTR)receiveWaterLevel, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	pressure_tasks[3] = taskSpawn("tPressureReceiveTempQueue", 100, 0x100, 2000, (FUNCPTR)receiveTempLevel, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); //added task for temp queue recieve - eli
 }
 
 void PRESSURE_Init_Critical(void) {
