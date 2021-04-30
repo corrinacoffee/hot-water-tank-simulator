@@ -60,8 +60,7 @@ static void waterFlowSimulator(int param) {
 			water.water_level--;
 		}
 		
-		// TODO delay
-		taskDelay(sysClkRateGet()*2); // quarter second delay - eli
+		taskDelay(sysClkRateGet()*2);
 	}
 }
 
@@ -81,7 +80,7 @@ static void waterLevelSensorSimulator(int param) {
 		  } else if (water.water_level >= sensor_level_midhigh) {
 			  water.current_sensor = WATER_SENSOR_MIDHIGH;
 			  if (semTake(out_valve_sem, NO_WAIT) == OK) {
-				  out_valve = false; // added valve states for each state transition - eli
+				  out_valve = false;
 				  semGive(out_valve_sem);
 			  }
 			  in_valve_a = false;
@@ -124,7 +123,7 @@ static void waterLevelSensorSimulator(int param) {
 		  sprintf(message, "Water level: %d\n", water.water_level);
 		  record(message);
 		  
-		  taskDelay(sysClkRateGet()*2); // quarter second delay - eli
+		  taskDelay(sysClkRateGet()*2);
 	}
 }
 
