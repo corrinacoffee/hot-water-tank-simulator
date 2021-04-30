@@ -12,7 +12,7 @@
 
 /* Type, enum, and struct definitions */
 typedef enum temp_state_e {
-	TEMP_CRIT_LOW,
+	TEMP_CRIT_LOW = 0,
 	TEMP_LOW,
 	TEMP_IN_TARGET,
 	TEMP_HIGH,
@@ -28,6 +28,7 @@ typedef struct temp_sensor_s {
 
 /* Function prototyes */
 void TEMP_Init(void);
+void TEMP_TaskInit(void);
 void setMinTemp(int new_min_temp);
 void setMaxTemp(int new_max_temp);
 
