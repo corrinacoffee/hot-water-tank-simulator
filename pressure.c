@@ -13,7 +13,7 @@ extern bool out_valve;
 extern bool heater;
 
 extern MSG_Q_ID water_queue;
-extern MSG_Q_ID temp_queue; //added temp queue extern def - eli
+extern MSG_Q_ID temp_queue;
 
 extern SEM_ID out_valve_sem;
 extern SEM_ID heater_sem;
@@ -21,7 +21,7 @@ extern SEM_ID heater_sem;
 static pressure_t pressure_sensor;
 static pressure_sim_vars_t pressure_sim;
 
-TASK_ID pressure_tasks[4]; //changed to 4 tasks to accomodate the recieve temperature task
+TASK_ID pressure_tasks[4];
 WDOG_ID pressure_watchdog;
 
 void receiveWaterLevel(int param)
@@ -34,12 +34,10 @@ void receiveWaterLevel(int param)
 			sprintf(record_message, "PRESSURE - Message Received:\n * Water Level: %d\n * State: %d\n", message.value, message.state);
 			record(record_message);
 		}
-		// TODO delay
-		taskDelay(PRESSURE_DELAY); // quarter second delay - eli
+		taskDelay(PRESSURE_DELAY);
 	}
 }
 
-//added temp recieve message - eli
 void receiveTempLevel(int param)
 {
 	message_struct_t message;
@@ -52,7 +50,7 @@ void receiveTempLevel(int param)
 			record(record_message);
 		}
 		// TODO delay
-		taskDelay(PRESSURE_DELAY); // quarter second delay - eli
+		taskDelay(PRESSURE_DELAY);
 	}
 }
 
@@ -72,8 +70,8 @@ void pressureSim(int param) {
 		// TODO
 		//possible implementation - eli -- could also just use integer values to set the range
 		//if (pressure_sim.temperature >=95) 
-		// TODO delay
-		taskDelay(PRESSURE_DELAY); // quarter second delay - eli
+
+		taskDelay(PRESSURE_DELAY);
 	}
 }
 
@@ -145,7 +143,7 @@ void PRESSURE_TaskInit(void) {
 	pressure_tasks[0] = taskSpawn("tPressureSensorSim", 100, 0x100, 2000, (FUNCPTR)pressureSensorSim, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	pressure_tasks[1] = taskSpawn("tPressureSim", 100, 0x100, 2000, (FUNCPTR)pressureSim, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	pressure_tasks[2] = taskSpawn("tPressureReceiveWaterQueue", 100, 0x100, 2000, (FUNCPTR)receiveWaterLevel, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	pressure_tasks[3] = taskSpawn("tPressureReceiveTempQueue", 100, 0x100, 2000, (FUNCPTR)receiveTempLevel, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0); //added task for temp queue recieve - eli
+	pressure_tasks[3] = taskSpawn("tPressureReceiveTempQueue", 100, 0x100, 2000, (FUNCPTR)receiveTempLevel, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 void PRESSURE_Init_Critical(void) {
