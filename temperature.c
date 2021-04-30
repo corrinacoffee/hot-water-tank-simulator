@@ -4,8 +4,6 @@
 #include "temperature.h"
 #include "commondefs.h"
 
-// idea: use mutex semaphore so no one can turn the heater on
-// until water has cooled to the desired temp (the mutex is released)
 // req 15: "The system shall have a water heater."
 // req 15: "The system shall have a water heater."
 // true if on, false if off
@@ -22,7 +20,6 @@ TASK_ID temp_tasks[2];
 
 SEM_ID heater_sem;
 
-//created temp sending function - eli
 void send_temp(void) 
 {
 	message_struct_t message;
@@ -43,9 +40,7 @@ void tempSimulator(int param) {
 		} else {
 			temp_sensor.temp--;
 		}
-		// TODO delay
-		taskDelay(sysClkRateGet()*2); // quarter second delay - eli
-		
+		taskDelay(sysClkRateGet()*2);
 	}
 }
 
@@ -98,8 +93,7 @@ static void tempSensorSimulator(int param) {
 		}
 		sprintf(message, "Temperature: %d\n", temp_sensor.temp);
 		record(message);
-		// TODO delay
-		taskDelay(sysClkRateGet()*2); // half second delay - eli
+		taskDelay(sysClkRateGet()*2);
 	}
 }
 
