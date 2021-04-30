@@ -4,7 +4,7 @@
 /* Definitions and Macros */
 
 // in degrees celcius
-#define MIN_TEMP 10					// req 28: "The default minimum temperature shall be 10°C."
+#define MIN_TEMP 10				// req 28: "The default minimum temperature shall be 10°C."
 #define MAX_TEMP 100				// req 27: "The default maximum temperature shall be 100°C."
 #define ROOM_TEMP 20
 #define DEFAULT_MIN_TARGET_TEMP 70
