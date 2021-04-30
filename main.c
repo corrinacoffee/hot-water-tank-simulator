@@ -6,7 +6,6 @@
 #include "waterlevel.h"
 #include "temperature.h"
 
-// TODO use this everywhere
 // req 6: "The system shall capture/record/display the system events and actions."
 // req 5: "The system shall use time-stamping for identifying time of events (both ticks and sec/nsec)."
 void record(char *fmt) {
