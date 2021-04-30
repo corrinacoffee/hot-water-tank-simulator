@@ -45,6 +45,7 @@ typedef struct {
 
 /* Function prototypes */
 void PRESSURE_Init(void);
+void PRESSURE_TaskInit(void);
 void PRESSURE_StateMachine(void);
 void PRESSURE_AddMessage(message_struct_t message);
 void PRESSURE_SetState(pressure_state_t state);
