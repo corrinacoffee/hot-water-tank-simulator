@@ -4,9 +4,9 @@
 /* Definitions and Macros */
 
 // in degrees celcius
-#define MIN_TEMP 10				// req 28: "The default minimum temperature shall be 10°C."
-#define MAX_TEMP 100				// req 27: "The default maximum temperature shall be 100°C."
-#define ROOM_TEMP 20
+#define MIN_TEMP 				10	// req 28: "The default minimum temperature shall be 10C."
+#define MAX_TEMP 				100	// req 27: "The default maximum temperature shall be 100C."
+#define ROOM_TEMP 				20
 #define DEFAULT_MIN_TARGET_TEMP 70
 #define DEFAULT_MAX_TARGET_TEMP 80
 
@@ -29,7 +29,13 @@ typedef struct temp_sensor_s {
 /* Function prototyes */
 void TEMP_Init(void);
 void TEMP_TaskInit(void);
-void setMinTemp(int new_min_temp);
-void setMaxTemp(int new_max_temp);
+void TEMP_SetMin(int new_min_temp);
+void TEMP_SetMax(int new_max_temp);
+
+/* Test Cases */
+void TEMP_TestCritLowTemp(void);
+void TEMP_TestLowTemp(void);
+void TEMP_TestHighTemp(void);
+void TEMP_TestCritHighTemp(void);
 
 #endif

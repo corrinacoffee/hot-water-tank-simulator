@@ -25,8 +25,14 @@ typedef struct {
 /* Function prototypes */
 void WATER_Init(void);
 void WATER_TaskInit(void);
-void setWaterLevelSensor(int sensorNumber, int newWaterLevel);
-void sigHand(int sigNo);
+void WATER_SetSensorToLevel(int sensorNumber, int newWaterLevel);
+void WATER_SignalHandler(int sigNo);
 TASK_ID WATER_getTaskId(void);
+
+/* Test Cases */
+void WATER_TestVeryLowWaterLevel(void);
+void WATER_TestLowWaterLevel(void);
+void WATER_TestAvgWaterLevel(void);
+void WATER_TestHighWaterLevel(void);
 
 #endif

@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "waterlevel.h"
 #include "temperature.h"
-// TODO have a way for the user to initiate being asked for input (call these functions)
 
 // req 29: "The system shall allow moving a water level sensor."
 void userSetWaterLevelSensor() {
@@ -15,25 +14,25 @@ void userSetWaterLevelSensor() {
   printf("Enter new water level: ");
   scanf("%d", &newWaterLevel);
   
-  setWaterLevelSensor(sensorNumber, newWaterLevel);
+  WATER_SetSensorToLevel(sensorNumber, newWaterLevel);
 }
 
-// req 30: "The system shall allow changing the temperature sensorâ€™s minimum value."
+// req 30: "The system shall allow changing the temperature sensorÃ¢â‚¬â„¢s minimum value."
 void userSetMinTemp() {
   int newMinTemp = -1;
   
   printf("Enter new minimum temperature: ");
   scanf("%d", &newMinTemp);
   
-  setMinTemp(newMinTemp);
+  TEMP_SetMin(newMinTemp);
 }
 
-// req 31: "The system shall allow changing the temperature sensorâ€™s maximum value."
+// req 31: "The system shall allow changing the temperature sensorÃ¢â‚¬â„¢s maximum value."
 void userSetMaxTemp() {
   int newMaxTemp = -1;
   
   printf("Enter new maximum temperature: ");
   scanf("%d", &newMaxTemp);
   
-  setMaxTemp(newMaxTemp);
+  TEMP_SetMax(newMaxTemp);
 }
